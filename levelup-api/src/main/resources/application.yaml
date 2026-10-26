@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: levelup-api
+  datasource:
+    username: root
+    password: root
+    url: jdbc:mysql://localhost:3306/leveup_api?createDatabaseIfNotExist=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
