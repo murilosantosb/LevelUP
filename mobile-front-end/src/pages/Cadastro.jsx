@@ -44,7 +44,7 @@ export default function Cadastro() {
     }
 
     setError('')
-    // Na etapa da API, aqui vai o POST /usuarios.
+    //Aqui irá o post de usuários na etapa da API
     navigate('/login')
   }
 
