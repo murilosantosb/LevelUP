@@ -1,0 +1,28 @@
+.cartao-cadastro {
+  gap: 14px;
+}
+
+.linha-usuario {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.linha-usuario .campo-texto {
+  flex: 1;
+}
+
+.status-usuario {
+  position: absolute;
+  right: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-usuario.disponivel {
+  color: var(--button);
+}
+
+.status-usuario.indisponivel {
+  color: #ff5a5a;
+}
