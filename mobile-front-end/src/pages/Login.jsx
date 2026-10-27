@@ -2,6 +2,7 @@ import './Login.css'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../assets/logo.svg'
+import background from '../assets/capainicial.png'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -23,7 +24,12 @@ export default function Login() {
   }
 
   return (
-    <div className="tela-autenticacao" id="tela-login">
+    <div
+      className="tela-autenticacao"
+      id="tela-login"
+      style={{ backgroundImage: `url(${background})` }}
+      >
+
       <form className="cartao-autenticacao" onSubmit={handleSubmit}>
         <img className="logo-autenticacao" src={logo} alt="Logo LevelUp" />
 

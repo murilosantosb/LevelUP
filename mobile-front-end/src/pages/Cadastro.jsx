@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../assets/logo.svg'
 import './Cadastro.css'
+import background from '../assets/capainicial.png'
 
 export default function Cadastro() {
   const [fullName, setFullName] = useState('')
@@ -48,7 +49,11 @@ export default function Cadastro() {
   }
 
   return (
-    <div className="tela-autenticacao" id="tela-cadastro">
+    <div
+      className="tela-autenticacao"
+      id="tela-login"
+      style={{ backgroundImage: `url(${background})` }}
+      >
       <form
         className="cartao-autenticacao cartao-cadastro"
         onSubmit={handleSubmit}
