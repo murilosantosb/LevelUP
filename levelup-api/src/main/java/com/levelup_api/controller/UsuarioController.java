@@ -1,53 +1,56 @@
 package com.levelup_api.controller;
 
+import com.levelup_api.dto.UsuarioAtualizacaoDTO;
+import com.levelup_api.dto.UsuarioPublicoDTO;
 import com.levelup_api.dto.UsuarioRequestDTO;
 import com.levelup_api.dto.UsuarioResponseDTO;
 import com.levelup_api.services.UsuarioService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/levelup/api")
+@RequestMapping("/api/usuarios")
 public class UsuarioController {
+    private final UsuarioService service;
 
-    private final UsuarioService usuarioService;
-
-    public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
+    public UsuarioController(UsuarioService service) {
+        this.service = service;
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> createUser(@RequestBody UsuarioRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.createUser(dto));
+    public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(dto));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> userById(@PathVariable Long id) {
-        return ResponseEntity.ok(usuarioService.userById(id));
+    @GetMapping("/{id:[0-9]+}")
+    public UsuarioPublicoDTO porId(@PathVariable Long id) {
+        return service.porId(id);
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<UsuarioResponseDTO> userByUsername(@PathVariable String username) {
-        return ResponseEntity.ok(usuarioService.userByUsername(username));
+    @GetMapping("/username/{username}")
+    public UsuarioPublicoDTO porUsername(@PathVariable String username) {
+        return service.porUsername(username);
     }
 
     @GetMapping
-    public ResponseEntity<List<UsuarioResponseDTO>> listUsers() {
-        return ResponseEntity.ok(usuarioService.listUsers());
+    public Page<UsuarioPublicoDTO> listar(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return service.listar(pageable);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> updateUser(@PathVariable Long id, @RequestBody UsuarioRequestDTO dto) {
-        return ResponseEntity.ok(usuarioService.updateUser(id, dto));
+    @PutMapping("/me")
+    public UsuarioResponseDTO atualizar(Authentication auth, @Valid @RequestBody UsuarioAtualizacaoDTO dto) {
+        return service.atualizar(auth.getName(), dto);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        usuarioService.deleteUser(id);
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> excluir(Authentication auth) {
+        service.excluir(auth.getName());
         return ResponseEntity.noContent().build();
     }
-
 }

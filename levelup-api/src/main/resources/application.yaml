@@ -11,3 +11,7 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
+
+  security:
+    user:
+      name: admin

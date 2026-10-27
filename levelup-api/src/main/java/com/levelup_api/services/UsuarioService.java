@@ -1,89 +1,78 @@
 package com.levelup_api.services;
 
-import com.levelup_api.dto.UsuarioRequestDTO;
-import com.levelup_api.dto.UsuarioResponseDTO;
+import com.levelup_api.dto.*;
 import com.levelup_api.model.Usuario;
 import com.levelup_api.repository.UsuarioRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.Locale;
 
 @Service
 public class UsuarioService {
-
-    private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
+    private final UsuarioRepository usuarios;
+    private final PasswordEncoder encoder;
+    private final EstatisticaUsuarioService estatisticas;
+    public UsuarioService(UsuarioRepository usuarios, PasswordEncoder encoder, EstatisticaUsuarioService estatisticas) {
+        this.usuarios = usuarios; this.encoder = encoder; this.estatisticas = estatisticas;
     }
-
-    public List<UsuarioResponseDTO> listUsers() {
-        return usuarioRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    @Transactional(readOnly = true) public Page<UsuarioPublicoDTO> listar(Pageable pageable) {
+        return usuarios.findAll(pageable).map(this::publico);
     }
-
-    public UsuarioResponseDTO createUser(UsuarioRequestDTO dto) {
-
-        Usuario user = Usuario.builder()
-                .nome(dto.nome())
-                .username(dto.email())
-                .email(dto.email())
-                .avatarUrl(dto.avatarUrl())
-                .senhaHash(passwordEncoder.encode(dto.senhaHash()))
-                .build();
-
-        usuarioRepository.save(user);
-
-        return toResponse(user);
+    @Transactional public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
+        String email = dto.email().trim().toLowerCase(Locale.ROOT), username = dto.username().trim();
+        if (usuarios.existsByEmail(email)) throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado.");
+        if (usuarios.existsByUsername(username)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Username já cadastrado.");
+        Usuario u = usuarios.save(Usuario.builder().nome(dto.nome().trim()).username(username).email(email)
+                .avatarUrl(dto.avatarUrl()).senhaHash(encoder.encode(dto.senhaHash())).build());
+        estatisticas.criarIniciais(u);
+        return resposta(u);
     }
-
-    public UsuarioResponseDTO userById(Long id) {
-        Usuario user = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não foi encontrado!"));
-
-        return toResponse(user);
+    @Transactional(readOnly = true) public UsuarioPublicoDTO porId(Long id) { return publico(buscar(id)); }
+    @Transactional(readOnly = true) public UsuarioPublicoDTO porUsername(String username) {
+        return publico(usuarios.findByUsername(username).orElseThrow(() -> naoEncontrado("Usuário não encontrado.")));
     }
-
-    public UsuarioResponseDTO userByUsername(String username) {
-        Usuario user = usuarioRepository.findByUsername(username);
-
-        if (usuarioRepository.findByUsername(username).equals(user)) {
-            return toResponse(user);
-        } else {
-            throw new RuntimeException("Usuário não foi encontrado");
+    @Transactional public UsuarioResponseDTO atualizar(String principal, UsuarioAtualizacaoDTO dto) {
+        Usuario u = atual(principal); String username = dto.username().trim();
+        String email = dto.email().trim().toLowerCase(Locale.ROOT);
+        if (usuarios.existsByEmailAndIdNot(email, u.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado.");
         }
+        if (usuarios.existsByUsernameAndIdNot(username, u.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username já cadastrado.");
+        }
+        u.setNome(dto.nome().trim()); u.setUsername(username); u.setEmail(email); u.setAvatarUrl(dto.avatarUrl());
+        return resposta(usuarios.save(u));
+    }
+    @Transactional public void excluir(String principal) { usuarios.delete(atual(principal)); }
+    @Transactional(readOnly = true) public Usuario atual(String principal) {
+        return usuarios.findByUsername(principal).orElseThrow(() -> naoEncontrado("Usuário autenticado não vinculado a uma conta."));
+    }
+    @Transactional(readOnly = true)
+    public Usuario buscar(Long id) {
+        return usuarios.findById(id).orElseThrow(() -> naoEncontrado("Usuário não encontrado."));
     }
 
-    public UsuarioResponseDTO updateUser(Long id, UsuarioRequestDTO user) {
-       Usuario newUser  = usuarioRepository.findById(id)
-                       .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-       newUser.setNome(user.nome());
-       newUser.setUsername(user.username());
-       newUser.setAvatarUrl(user.avatarUrl());
-
-       usuarioRepository.save(newUser);
-
-       return toResponse(newUser);
+    private UsuarioPublicoDTO publico(Usuario u) {
+        return new UsuarioPublicoDTO(u.getId(), u.getNome(), u.getUsername(), u.getAvatarUrl());
     }
 
-    public void deleteUser(Long id) {
-        usuarioRepository.deleteById(id);
-    }
-
-    public UsuarioResponseDTO toResponse(Usuario user) {
+    private UsuarioResponseDTO resposta(Usuario u) {
         return UsuarioResponseDTO.builder()
-                .id(user.getId())
-                .nome(user.getNome())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .avatarUrl(user.getAvatarUrl())
-                .dataCriacao(user.getDataCriacao())
+                .id(u.getId())
+                .nome(u.getNome())
+                .username(u.getUsername())
+                .email(u.getEmail())
+                .avatarUrl(u.getAvatarUrl())
+                .dataCriacao(u.getDataCriacao())
                 .build();
+    }
+
+    private ResponseStatusException naoEncontrado(String msg) {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, msg);
     }
 }

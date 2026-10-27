@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EstatisticaUsuarioRepository extends JpaRepository<EstatisticaUsuario, Long> {
+    java.util.Optional<EstatisticaUsuario> findByUsuarioId(Long usuarioId);
 }
