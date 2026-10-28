@@ -1,9 +1,16 @@
-import { FiUsers } from 'react-icons/fi'
+import { FiUsers, FiLogOut } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
 import { profile } from '../services/mockProfile'
 import cardContinue from '../assets/motPerfil.png'
 import './Perfil.css'
 
 export default function Perfil() {
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    navigate('/login')
+  }
+
   return (
     <div id="tela-perfil">
       <section className="topo-perfil">
@@ -14,7 +21,8 @@ export default function Perfil() {
         <div className="estatisticas-perfil">
           <div className="estatistica">
             <span className="valor-estatistica">
-              <FiUsers size={16} color="var(--primary)" /> {profile.followers}
+              <FiUsers size={16} color="var(--primary)" />
+              {profile.followers}
             </span>
             <span className="rotulo-estatistica">Seguidores</span>
           </div>
@@ -26,6 +34,11 @@ export default function Perfil() {
             <span className="rotulo-estatistica">Dias</span>
           </div>
         </div>
+
+        <button className="botao-logout" onClick={handleLogout}>
+          <FiLogOut size={16} />
+          Sair da conta
+        </button>
       </section>
 
       <section id="semana-treinos" className="semana-treinos">
@@ -43,7 +56,9 @@ export default function Perfil() {
       <section className="cards-perfil">
         <div className="card-amigos">
           <strong>Friends</strong>
-          <span className="amigos-online">{profile.friendsOnline} online</span>
+          <span className="amigos-online">
+            {profile.friendsOnline} online
+          </span>
         </div>
 
         <img
