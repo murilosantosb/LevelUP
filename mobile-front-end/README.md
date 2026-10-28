@@ -1,16 +1,16 @@
-# React + Vite
+# LevelUP Mobile
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React Native com Expo para Android, iOS e navegador, com Axios e TanStack Query v5.
 
-Currently, two official plugins are available:
+```powershell
+npm ci
+npm start
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Abra o aplicativo no Expo Go pelo QR code, ou execute `npm run android` com um emulador iniciado. O backend Spring Boot deve estar acessível na porta 8080.
 
-## React Compiler
+Para abrir no navegador, encerre o servidor anterior com `Ctrl+C`, execute `npm run web` e acesse http://localhost:8081. As mesmas telas React Native são renderizadas pelo suporte web do Expo. Tokens usam Expo SecureStore nos dispositivos e `sessionStorage` no navegador.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Para configurar a API, copie `.env.example` para `.env` e defina `EXPO_PUBLIC_API_URL` com o IP do computador, terminando em `/api`. No emulador Android padrão use `http://10.0.2.2:8080/api`. O celular físico precisa usar o endereço de rede do computador.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+O [guia completo](../README.md) descreve MySQL, autenticação, configuração de rede, execução e builds.

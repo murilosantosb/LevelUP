@@ -1,86 +1,60 @@
-import { FiUsers, FiLogOut } from 'react-icons/fi'
-import { useNavigate } from 'react-router-dom'
-import { profile } from '../services/mockProfile'
-import cardContinue from '../assets/motPerfil.png'
-import './Perfil.css'
+import { Image, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { useApiQuery, useLogout, useSession } from '../hooks/useApi'
+import { errorMessage } from '../services/api'
+import QueryStatus from '../components/QueryStatus'
+import { Avatar, Button, ErrorText } from '../components/ui'
+import { colors, styles } from '../styles/theme'
 
 export default function Perfil() {
-  const navigate = useNavigate()
-
-  function handleLogout() {
-    navigate('/login')
-  }
+  const { data: user } = useSession()
+  const logout = useLogout()
+  const atividades = useApiQuery(['atividades'], '/atividades-diarias/me')
+  const seguidores = useApiQuery(['seguidores', user?.id], `/usuarios/${user?.id}/seguidores/contagem`)
+  const seguindo = useApiQuery(['seguindo'], `/usuarios/${user?.id}/seguindo`)
+  const stats = useApiQuery(['estatisticas'], '/estatisticas/me')
+  const sequencia = useApiQuery(['sequencia'], '/atividades-diarias/me/sequencia')
+  const queries = [atividades, seguidores, seguindo, stats, sequencia]
+  const today = new Date()
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay())
+  const week = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    return { key, label: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][index], day: date.getDate(), trained: atividades.data?.some((item) => item.data === key) }
+  })
 
   return (
-    <div id="tela-perfil">
-      <section className="topo-perfil">
-        <div className="avatar-perfil" />
-        <h1 className="nome-perfil">{profile.name}</h1>
-        <p className="usuario-perfil">{profile.username}</p>
-
-        <div className="estatisticas-perfil">
-          <div className="estatistica">
-            <span className="valor-estatistica">
-              <FiUsers size={16} color="var(--primary)" />
-              {profile.followers}
-            </span>
-            <span className="rotulo-estatistica">Seguidores</span>
-          </div>
-
-          <div className="divisor-estatistica" />
-
-          <div className="estatistica">
-            <span className="valor-estatistica">{profile.days}</span>
-            <span className="rotulo-estatistica">Dias</span>
-          </div>
-        </div>
-
-        <button className="botao-logout" onClick={handleLogout}>
-          <FiLogOut size={16} />
-          Sair da conta
-        </button>
-      </section>
-
-      <section id="semana-treinos" className="semana-treinos">
-        {profile.week.map((item) => (
-          <div key={item.label} className="dia-semana">
-            <span
-              className={item.trained ? 'ponto-dia treinou' : 'ponto-dia'}
-            />
-            <span className="rotulo-dia">{item.label}</span>
-            <span className="numero-dia">{item.day}</span>
-          </div>
-        ))}
-      </section>
-
-      <section className="cards-perfil">
-        <div className="card-amigos">
-          <strong>Friends</strong>
-          <span className="amigos-online">
-            {profile.friendsOnline} online
-          </span>
-        </div>
-
-        <img
-          className="imagem-incentivo"
-          src={cardContinue}
-          alt="Continue! Você está evoluindo."
-        />
-      </section>
-
-      <section className="feed-perfil">
-        <h2 className="titulo-secao">Feed</h2>
-        <div className="grade-fotos">
-          {profile.photos.map((photo) => (
-            <img
-              key={photo.id}
-              className="foto-grade"
-              src={photo.imageUrl}
-              alt="Foto de treino"
-            />
-          ))}
-        </div>
-      </section>
-    </div>
+    <ScrollView style={styles.screen} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 16 }} refreshControl={<RefreshControl refreshing={queries.some((query) => query.isRefetching)} onRefresh={() => queries.forEach((query) => { void query.refetch() })} tintColor={colors.primary} />}>
+      <View style={styles.profileTop}>
+        <Avatar user={user} large />
+        <Text style={styles.profileName}>{user?.nome}</Text>
+        <Text style={styles.userName}>{user?.username}</Text>
+        <View style={styles.profileStats}>
+          <View style={styles.center}><Text style={styles.profileStatValue}>{seguidores.data ?? '—'}</Text><Text style={styles.userName}>Seguidores</Text></View>
+          <View style={styles.statDivider} />
+          <View style={styles.center}><Text style={styles.profileStatValue}>{atividades.data?.length ?? '—'}</Text><Text style={styles.userName}>Dias</Text></View>
+        </View>
+        <View style={{ marginTop: 20 }}><Button title="Sair da conta" secondary pending={logout.isPending} onPress={() => logout.mutate()} /></View>
+        <ErrorText>{logout.isError ? errorMessage(logout.error) : ''}</ErrorText>
+      </View>
+      {queries.map((query, index) => <QueryStatus key={index} query={query} />)}
+      <View style={styles.week}>
+        {week.map((day) => <View key={day.key} style={styles.day} accessibilityLabel={`${day.label}, ${day.day}${day.trained ? ', atividade registrada' : ''}`}>
+          <View style={[styles.dot, day.trained && styles.activeDot]} />
+          <Text style={styles.userName}>{day.label}</Text><Text style={styles.text}>{day.day}</Text>
+        </View>)}
+      </View>
+      <View style={styles.row}>
+        <View style={styles.friendsCard}><Text style={styles.text}>Seguindo</Text><Text style={[styles.muted, { color: colors.primary }]}>{seguindo.data?.length ?? '—'} pessoas</Text></View>
+        <Image source={require('../assets/motPerfil.png')} style={styles.incentive} resizeMode="cover" accessibilityLabel="Continue! Você está evoluindo." />
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.heading}>Minha evolução</Text>
+        {stats.data && <>
+          <Text style={styles.statValue}>Nível {stats.data.nivel}</Text>
+          <Text style={styles.text}>{stats.data.xpTotal} XP · {stats.data.vitorias} vitórias · {stats.data.derrotas} derrotas</Text>
+        </>}
+        {sequencia.data && <Text style={styles.muted}>{sequencia.data.diasConsecutivos} dias consecutivos de atividade</Text>}
+      </View>
+    </ScrollView>
   )
 }

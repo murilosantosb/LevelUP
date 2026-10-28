@@ -39,8 +39,9 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public Page<UsuarioPublicoDTO> listar(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
-        return service.listar(pageable);
+    public Page<UsuarioPublicoDTO> listar(@RequestParam(defaultValue = "") String busca,
+                                         @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return service.pesquisar(busca, pageable);
     }
 
     @PutMapping("/me")

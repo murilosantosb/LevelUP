@@ -1,72 +1,32 @@
-import './Login.css'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import logo from '../assets/logo.svg'
-import background from '../assets/capainicial.png'
+import { useLogin } from '../hooks/useApi'
+import { errorMessage } from '../services/api'
+import { AuthLink, AuthScreen, Button, ErrorText, Field } from '../components/ui'
+import { styles } from '../styles/theme'
 
-export default function Login() {
+export default function Login({ navigation }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const login = useLogin()
 
-  function handleSubmit(event) {
-    event.preventDefault()
-
-    if (!username || !password) {
-      setError('Preencha todos os campos.')
+  function submit() {
+    if (login.isPending) return
+    if (!username.trim() || !password) {
+      setError('Preencha o usuário e a senha.')
       return
     }
-
     setError('')
-    //Apenas navega enquanto não está conectada à api
-    navigate('/')
+    login.mutate({ username, password })
   }
 
   return (
-    <div
-      className="tela-autenticacao"
-      id="tela-login"
-      style={{ backgroundImage: `url(${background})` }}
-      >
-
-      <form className="cartao-autenticacao" onSubmit={handleSubmit}>
-        <img className="logo-autenticacao" src={logo} alt="Logo LevelUp" />
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-usuario">Usuário</label>
-          <input
-            id="campo-usuario"
-            className="campo-texto"
-            type="text"
-            placeholder="@LevelUpUsuario"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </div>
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-senha">Senha</label>
-          <input
-            id="campo-senha"
-            className="campo-texto"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
-
-        {error && <p className="mensagem-erro">{error}</p>}
-
-        <button className="botao-principal" type="submit">
-          Entrar
-        </button>
-
-        <Link className="link-secundario" to="/cadastro">
-          Criar conta &gt;
-        </Link>
-      </form>
-    </div>
+    <AuthScreen>
+      <Field label="Usuário" value={username} onChangeText={setUsername} placeholder="@LevelUpUsuario" textContentType="username" autoComplete="username" maxLength={30} />
+      <Field label="Senha" value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry textContentType="password" autoComplete="current-password" onSubmitEditing={submit} returnKeyType="go" />
+      <ErrorText>{error || (login.isError ? errorMessage(login.error) : '')}</ErrorText>
+      <Button title="Entrar" pending={login.isPending} onPress={submit} style={styles.authButton} />
+      <AuthLink title="Criar conta >" disabled={login.isPending} onPress={() => navigation.navigate('Cadastro')} />
+    </AuthScreen>
   )
 }

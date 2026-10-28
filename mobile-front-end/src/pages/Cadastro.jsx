@@ -1,148 +1,56 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import logo from '../assets/logo.svg'
-import './Cadastro.css'
-import background from '../assets/capainicial.png'
+import { useCadastro } from '../hooks/useApi'
+import { errorMessage } from '../services/api'
+import { AuthLink, AuthScreen, Button, ErrorText, Field } from '../components/ui'
+import { styles } from '../styles/theme'
 
-export default function Cadastro() {
-  const [fullName, setFullName] = useState('')
+export default function Cadastro({ navigation }) {
+  const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const cadastro = useCadastro()
 
-  const usernameAvailable = username.length >= 3 && username !== 'level.up'
-
-  function handleSubmit(event) {
-    event.preventDefault()
-
-    if (!fullName || !email || !username || !password || !confirmPassword) {
-      setError('Preencha todos os campos.')
+  function submit() {
+    if (cadastro.isPending) return
+    if (nome.trim().length < 3 || nome.trim().length > 100) {
+      setError('O nome deve ter entre 3 e 100 caracteres.')
       return
     }
-
-    if (!email.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError('Digite um e-mail válido.')
       return
     }
-
-    if (!usernameAvailable) {
-      setError('Escolha outro nome de usuário.')
+    if (username.trim().length < 3 || username.trim().length > 30) {
+      setError('O usuário deve ter entre 3 e 30 caracteres.')
       return
     }
-
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.')
+    if (password.length < 6 || password.length > 20) {
+      setError('A senha deve ter entre 6 e 20 caracteres.')
       return
     }
-
     if (password !== confirmPassword) {
       setError('As senhas não coincidem.')
       return
     }
-
     setError('')
-    //Aqui irá o post de usuários na etapa da API
-    navigate('/login')
+    cadastro.mutate({ nome: nome.trim(), email: email.trim(), username: username.trim(), senhaHash: password }, {
+      onSuccess: () => navigation.navigate('Login'),
+    })
   }
 
   return (
-    <div
-      className="tela-autenticacao"
-      id="tela-login"
-      style={{ backgroundImage: `url(${background})` }}
-      >
-      <form
-        className="cartao-autenticacao cartao-cadastro"
-        onSubmit={handleSubmit}
-      >
-        <img className="logo-autenticacao" src={logo} alt="Logo LevelUp" />
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-nome">Nome completo</label>
-          <input
-            id="campo-nome"
-            className="campo-texto"
-            type="text"
-            placeholder="Nome completo"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-          />
-        </div>
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-email">Email</label>
-          <input
-            id="campo-email"
-            className="campo-texto"
-            type="email"
-            placeholder="usuario@email.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-usuario">Nome de usuário</label>
-          <div className="linha-usuario">
-            <input
-              id="campo-usuario"
-              className="campo-texto"
-              type="text"
-              placeholder="@LevelUpUsuario"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-            {username && (
-              <span
-                className={
-                  usernameAvailable
-                    ? 'status-usuario disponivel'
-                    : 'status-usuario indisponivel'
-                }
-              >
-                {usernameAvailable ? 'disponível' : 'indisponível'}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-senha">Criar senha</label>
-          <input
-            id="campo-senha"
-            className="campo-texto"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
-
-        <div className="grupo-campo">
-          <label htmlFor="campo-confirmar-senha">Confirmar senha</label>
-          <input
-            id="campo-confirmar-senha"
-            className="campo-texto"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          />
-        </div>
-
-        {error && <p className="mensagem-erro">{error}</p>}
-
-        <button className="botao-principal" type="submit">
-          Cadastrar
-        </button>
-
-        <Link className="link-secundario" to="/login">
-          Possuo cadastro &gt;
-        </Link>
-      </form>
-    </div>
+    <AuthScreen>
+      <Field label="Nome completo" placeholder="Nome completo" value={nome} onChangeText={setNome} autoCapitalize="words" autoComplete="name" maxLength={100} />
+      <Field label="Email" placeholder="usuario@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" />
+      <Field label="Nome de usuário" placeholder="@LevelUpUsuario" value={username} onChangeText={setUsername} autoComplete="username-new" maxLength={30} />
+      <Field label="Criar senha" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" maxLength={20} />
+      <Field label="Confirmar senha" placeholder="••••••••" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry maxLength={20} onSubmitEditing={submit} returnKeyType="go" />
+      <ErrorText>{error || (cadastro.isError ? errorMessage(cadastro.error) : '')}</ErrorText>
+      <Button title="Cadastrar" onPress={submit} pending={cadastro.isPending} style={styles.authButton} />
+      <AuthLink title="Possuo cadastro >" disabled={cadastro.isPending} onPress={() => navigation.navigate('Login')} />
+    </AuthScreen>
   )
 }

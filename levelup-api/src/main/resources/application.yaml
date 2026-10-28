@@ -2,9 +2,9 @@ spring:
   application:
     name: levelup-api
   datasource:
-    username: root
-    password: root
-    url: jdbc:mysql://localhost:3306/leveup_api?createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/leveup_api?createDatabaseIfNotExist=true}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -12,6 +12,12 @@ spring:
     hibernate:
       ddl-auto: update
 
-  security:
-    user:
-      name: admin
+server:
+  address: 0.0.0.0
+  port: ${PORT:8080}
+
+app:
+  auth:
+    token-duration: ${AUTH_TOKEN_DURATION:30d}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://127.0.0.1:8081}

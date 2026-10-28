@@ -1,95 +1,39 @@
-import logoLevelUp from '../assets/logo.svg'
-import { currentUser, posts } from '../services/mockPosts' // import { useState, useEffect } from 'react'
+import { FlatList, KeyboardAvoidingView, Platform, RefreshControl, Text, View } from 'react-native'
+import { usePosts, useSession } from '../hooks/useApi'
+import QueryStatus from '../components/QueryStatus'
+import { Avatar, Button, Logo } from '../components/ui'
 import PostCard from '../components/PostCard'
-import './Feed.css'
+import PublicarPost from '../components/PublicarPost'
+import { colors, styles } from '../styles/theme'
 
 export default function Feed() {
-  return (
-    <div id="tela-feed">
-      <header className="cabecalho-feed">
-        <img className="logo-feed" src={logoLevelUp} alt="LevelUp" />
-
-        <div className="usuario-feed">
-          <div className="avatar-feed" />
-          <div>
-            <p className="usuario-post">{currentUser.username}</p>
-            <p className="nome-post">{currentUser.name}</p>
-          </div>
-        </div>
-      </header>
-
-      <section id="lista-posts">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </section>
-    </div>
-  )
-}
-
-
-/* 
-PARA A API
-
-import { useState, useEffect } from 'react'
-import logoLevelUp from '../assets/logo.svg'
-import { buscarPosts } from '../services/postService'
-import PostCard from '../components/PostCard'
-import './Feed.css'
-
-export default function Feed() {
-  const [currentUser, setCurrentUser] = useState(null)
-  const [posts, setPosts] = useState([])
-  const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState('')
-
-  useEffect(() => {
-    async function carregarFeed() {
-      try {
-        const dados = await buscarPosts()
-
-        setPosts(dados.posts)
-        setCurrentUser(dados.currentUser)
-      } catch (erro) {
-        setErro('Não foi possível carregar o feed.')
-      } finally {
-        setCarregando(false)
-      }
-    }
-
-    carregarFeed()
-  }, [])
-
-  if (carregando) {
-    return <p>Carregando feed...</p>
-  }
-
-  if (erro) {
-    return <p>{erro}</p>
-  }
+  const { data: user } = useSession()
+  const posts = usePosts()
+  const items = posts.data?.pages.flatMap((page) => page.content) || []
 
   return (
-    <div id="tela-feed">
-      <header className="cabecalho-feed">
-        <img className="logo-feed" src={logoLevelUp} alt="LevelUp" />
-
-        {currentUser && (
-          <div className="usuario-feed">
-            <div className="avatar-feed" />
-            <div>
-              <p className="usuario-post">{currentUser.username}</p>
-              <p className="nome-post">{currentUser.name}</p>
-            </div>
-          </div>
-        )}
-      </header>
-
-      <section id="lista-posts">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </section>
-    </div>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={posts.isRefetching} onRefresh={() => posts.refetch()} tintColor={colors.primary} />}
+        ListHeaderComponent={<>
+          <View style={styles.feedHeader}>
+            <Logo style={styles.feedLogo} />
+            <View style={styles.row}>
+              <Avatar user={user} />
+              <View><Text style={styles.username}>{user?.username}</Text><Text style={styles.userName}>{user?.nome}</Text></View>
+            </View>
+          </View>
+          <PublicarPost />
+          <QueryStatus query={posts} />
+        </>}
+        ListEmptyComponent={posts.isSuccess ? <Text style={[styles.muted, { padding: 16 }]}>Nenhuma publicação ainda. Compartilhe a primeira!</Text> : null}
+        ListFooterComponent={posts.hasNextPage ? <View style={{ margin: 16 }}><Button title="Carregar mais" secondary pending={posts.isFetchingNextPage} onPress={() => posts.fetchNextPage()} /></View> : null}
+        renderItem={({ item }) => <PostCard post={item} />}
+      />
+    </KeyboardAvoidingView>
   )
 }
- */

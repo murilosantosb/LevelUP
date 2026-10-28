@@ -17,11 +17,18 @@ public class UsuarioService {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder encoder;
     private final EstatisticaUsuarioService estatisticas;
+
+
     public UsuarioService(UsuarioRepository usuarios, PasswordEncoder encoder, EstatisticaUsuarioService estatisticas) {
         this.usuarios = usuarios; this.encoder = encoder; this.estatisticas = estatisticas;
     }
     @Transactional(readOnly = true) public Page<UsuarioPublicoDTO> listar(Pageable pageable) {
         return usuarios.findAll(pageable).map(this::publico);
+    }
+    @Transactional(readOnly = true) public Page<UsuarioPublicoDTO> pesquisar(String busca, Pageable pageable) {
+        String termo = busca == null ? "" : busca.trim();
+        return usuarios.findByNomeContainingIgnoreCaseOrUsernameContainingIgnoreCase(termo, termo, pageable)
+                .map(this::publico);
     }
     @Transactional public UsuarioResponseDTO cadastrar(UsuarioRequestDTO dto) {
         String email = dto.email().trim().toLowerCase(Locale.ROOT), username = dto.username().trim();
@@ -32,7 +39,9 @@ public class UsuarioService {
         estatisticas.criarIniciais(u);
         return resposta(u);
     }
-    @Transactional(readOnly = true) public UsuarioPublicoDTO porId(Long id) { return publico(buscar(id)); }
+    @Transactional(readOnly = true) public UsuarioPublicoDTO porId(Long id) {
+        return publico(buscar(id));
+    }
     @Transactional(readOnly = true) public UsuarioPublicoDTO porUsername(String username) {
         return publico(usuarios.findByUsername(username).orElseThrow(() -> naoEncontrado("Usuário não encontrado.")));
     }
@@ -48,9 +57,14 @@ public class UsuarioService {
         u.setNome(dto.nome().trim()); u.setUsername(username); u.setEmail(email); u.setAvatarUrl(dto.avatarUrl());
         return resposta(usuarios.save(u));
     }
-    @Transactional public void excluir(String principal) { usuarios.delete(atual(principal)); }
+    @Transactional public void excluir(String principal) {
+        usuarios.delete(atual(principal));
+    }
     @Transactional(readOnly = true) public Usuario atual(String principal) {
         return usuarios.findByUsername(principal).orElseThrow(() -> naoEncontrado("Usuário autenticado não vinculado a uma conta."));
+    }
+    @Transactional public Usuario atualParaAtualizacao(String principal) {
+        return usuarios.findByUsernameForUpdate(principal).orElseThrow(() -> naoEncontrado("Usuário não encontrado."));
     }
     @Transactional(readOnly = true)
     public Usuario buscar(Long id) {

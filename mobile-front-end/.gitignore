@@ -10,7 +10,17 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-android
+dist-ios
+dist-web
+.expo
+android
+ios
+coverage
 *.local
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

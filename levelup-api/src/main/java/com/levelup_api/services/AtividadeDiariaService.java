@@ -18,7 +18,7 @@ import java.util.List;
 
 @Service
 public class AtividadeDiariaService {
-    private static final int XP_POR_TAREFA = 10;
+    public static final int XP_POR_TAREFA = 10;
 
     private final AtividadeDiariaRepository repo;
     private final UsuarioService usuarios;
@@ -36,7 +36,7 @@ public class AtividadeDiariaService {
 
     @Transactional
     public AtividadeDiariaDTO registrar(String principal, AtividadeDiariaRequestDTO dto) {
-        Usuario usuario = usuarios.atual(principal);
+        Usuario usuario = usuarios.atualParaAtualizacao(principal);
         LocalDate dia = dto.data() == null ? LocalDate.now(ZoneId.systemDefault()) : dto.data();
 
         if (dia.isAfter(LocalDate.now(ZoneId.systemDefault()))) {
@@ -74,6 +74,22 @@ public class AtividadeDiariaService {
         return repo.findByUsuarioIdOrderByDataDesc(usuarios.atual(principal).getId()).stream()
                 .map(this::dto)
                 .toList();
+    }
+
+    @Transactional
+    public void registrarConclusao(Usuario usuario) {
+        LocalDate hoje = LocalDate.now(ZoneId.systemDefault());
+        AtividadeDiaria atividade = repo.findByUsuarioIdAndData(usuario.getId(), hoje)
+                .orElseGet(() -> AtividadeDiaria.builder().usuario(usuario).data(hoje)
+                        .tarefasConcluidas(0).xpGanho(0).build());
+        try {
+            atividade.setTarefasConcluidas(Math.addExact(atividade.getTarefasConcluidas(), 1));
+            atividade.setXpGanho(Math.addExact(atividade.getXpGanho(), XP_POR_TAREFA));
+        } catch (ArithmeticException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Limite de atividades do dia atingido.");
+        }
+        repo.save(atividade);
+        stats.adicionarXp(usuario.getId(), XP_POR_TAREFA);
     }
 
     @Transactional(readOnly = true)
