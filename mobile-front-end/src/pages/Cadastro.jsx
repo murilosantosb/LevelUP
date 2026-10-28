@@ -66,7 +66,7 @@ export default function Cadastro() {
             id="campo-nome"
             className="campo-texto"
             type="text"
-            placeholder="Usuário Silva Santos"
+            placeholder="Nome completo"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
           />
@@ -78,7 +78,7 @@ export default function Cadastro() {
             id="campo-email"
             className="campo-texto"
             type="email"
-            placeholder="usuario@gmail.com"
+            placeholder="usuario@email.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
